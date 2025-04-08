@@ -1,0 +1,13 @@
+*.pyc
+venv/
+# Always exclude these for Bash projects:
+/venv/
+.env
+secrets/
+.vault/
+*.pem
+*.cert
+*.crt
+*.key
+*.pgp
+*.gpg
