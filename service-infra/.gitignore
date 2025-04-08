@@ -11,3 +11,13 @@ secrets/
 *.key
 *.pgp
 *.gpg
+
+# General
+*.log
+*.tmp
+*.swp
+*.bak
+*~
+.DS_Store
+.idea/
+.vscode/
