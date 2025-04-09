@@ -412,7 +412,7 @@ exit 1
 
 
 ```
-> [!NOTE]  
+>  **Note** 
 > If you create the script in the root directory, you need to change or modify the path of the script in the `__main__.py` file. In my case i did `'/Users/mohammaduzzaman/Documents/running-nodejs-mysql/script/check-mysql.sh'`
 
 ![Diagram](./images/image_5.png)
@@ -456,8 +456,45 @@ mysql> show databases;
 
 ```bash
 sudo systemctl restart mysql
-sudo systemctl status mysqlomage_7
+sudo systemctl status mysql
 
 ```
 
 ![Diagram](./images/image_7.png)
+
+# Create mySql-check.service in the nodejs-server
+
+Follow the sequence based on **Image_8**  First, check if we have the envirment variable ssh for the **DB private IP**.
+
+```bash
+echo $DB_PRIVATE_IP
+
+```
+
+![Diagram](./images/image_8.png)
+
+# Create a systemd service for the MySQL check script
+
+This will create a systemd servic for the MySql check script `check-mysql.sh` in the nodejs-server. It will start the MySQL check script once the network is up.
+
+```bash
+sudo vi /etc/systemd/system/mysql-check.service
+
+```
+Add the following content to the file:
+
+```bash
+[Unit]
+Description=MySQL Availability Check
+After=network.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/environment
+ExecStart=/usr/local/bin/check-mysql.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+
+```
