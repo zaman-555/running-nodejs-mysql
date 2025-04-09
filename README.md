@@ -365,7 +365,7 @@ sudo hostnamectl set-hostname db-server
 ```
 # Create a script to check if MySql is up and running
 
-This Bash script verifies TCP connectivity to a MySQL server with configurable retry logic, making it ideal for deployment health checks or service dependency verification.
+We created a directory name script from the beginning called `script`and add the following content to the file named `checked-mysql.sh` This Bash script verifies TCP connectivity to a MySQL server with configurable retry logic, making it ideal for deployment health checks or service dependency verification.
 
 - Port Connectivity Testing: Uses netcat (nc -z) to check if MySQL's port (default: 3306) is reachable.
 - Retry Mechanism: Retries up to MAX_RETRIES (default: 30) with a delay of RETRY_INTERVAL (default: 10 seconds) between attempts.
@@ -407,3 +407,7 @@ exit 1
 
 
 ```
+> [!NOTE]  
+> If you create the script in the root directory, you need to change or modify the path of the script in the `__main__.py` file to in my case i did `'/Users/mohammaduzzaman/Documents/running-nodejs-mysql/script/check-mysql.sh'`
+
+![Diagram](./images/image_5.png)
