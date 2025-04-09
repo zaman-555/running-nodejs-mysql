@@ -57,6 +57,19 @@ mkdir script
 
 In order to work with Pulumi following, set up a Python virtual environment.
 
+Before you run `pulumi new aws-python` make sure to create a new SSH key pair for use with an AWS RDS DB Cluster, you can use the AWS CLI command aws ec2 create-key-pair. Here's the command to create a new key pair and save it to a file named db-cluster.pem:
+
+```bash
+cd ~/.ssh/
+aws ec2 create-key-pair --key-name db-cluster --query 'KeyMaterial' --output text > db-cluster.pem
+
+```
+After creating the key pair, set restrictive permissions on the .pem file to keep it secure:
+
+```bash
+chmod 400 db-cluster.pem
+
+```
 
 ```bash
 brew install pulumi
@@ -69,25 +82,15 @@ Stack name: `dev`
 Description: `A simple nodejs db cluster`
 Region: `us-east-1`
 
-Go with the default values and enter  to create the project.
+Go with the default values and enter to create the project.
+
+
 
 ## Update the  `__main__.py` file:
 
 Define the AWS infrastructure needed for the database and application server by opening the __main__.py file.  The foundational architecture needed to set up a database and Virtual Private Cloud (VPC) application, including subnets, security groups, NAT gateways, Internet gateways, route tables, and EC2 instances, is provided by this Pulumi code.
 
-Before you run `pulumi new aws-python` make sure to create a new SSH key pair for use with an AWS RDS DB Cluster, you can use the AWS CLI command aws ec2 create-key-pair. Here's the command to create a new key pair and save it to a file named db-cluster.pem:
 
-
-```bash
-aws ec2 create-key-pair --key-name db-cluster --query 'KeyMaterial' --output text > db-cluster.pem
-
-```
-After creating the key pair, set restrictive permissions on the .pem file to keep it secure:
-
-```bash
-chmod 400 db-cluster.pem
-
-```
 
 ```bash
 import pulumi
@@ -340,7 +343,7 @@ pulumi.Output.all(*all_ips).apply(create_config_file)
 
 
 ```
-
+This will create the infrastructure and output the public and private IPs of the Node.js and db-servers.
 
 ```bash
 pulumi up --yes 
@@ -363,6 +366,8 @@ sudo hostnamectl set-hostname nodejs-server
 sudo hostnamectl set-hostname db-server
 
 ```
+
+
 # Create a script to check if MySql is up and running
 
 We created a directory name script from the beginning called `script`and add the following content to the file named `checked-mysql.sh` This Bash script verifies TCP connectivity to a MySQL server with configurable retry logic, making it ideal for deployment health checks or service dependency verification.
@@ -408,6 +413,51 @@ exit 1
 
 ```
 > [!NOTE]  
-> If you create the script in the root directory, you need to change or modify the path of the script in the `__main__.py` file to in my case i did `'/Users/mohammaduzzaman/Documents/running-nodejs-mysql/script/check-mysql.sh'`
+> If you create the script in the root directory, you need to change or modify the path of the script in the `__main__.py` file. In my case i did `'/Users/mohammaduzzaman/Documents/running-nodejs-mysql/script/check-mysql.sh'`
 
 ![Diagram](./images/image_5.png)
+
+
+# Install MySQL
+
+```bash
+sudo apt-get update
+sudo apt-get install mysql-server
+
+```
+# Configure MySQL to allow remote connections
+
+We need to modify or update `blind-address = 172.0.0.1` to  `blind-address = 0.0.0.0`
+
+```bash
+sudo sudo vi /etc/mysql/mysql.conf.d/mysqld.cnf
+sudo mysql
+
+```
+
+
+```bash
+CREATE DATABASE app_db;
+CREATE USER 'app_user'@'%' IDENTIFIED BY '123456';
+GRANT ALL PRIVILEGES ON app_db.* TO 'app_user'@'%';
+FLUSH PRIVILEGES;
+exit;
+
+```
+run this command you can see the newly created database app_db.
+
+```bash
+mysql> show databases;
+
+```
+![Diagram](./images/image_6.png)
+
+# Restart MySql to apply change
+
+```bash
+sudo systemctl restart mysql
+sudo systemctl status mysqlomage_7
+
+```
+
+![Diagram](./images/image_7.png)
