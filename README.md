@@ -13,11 +13,11 @@ We must use a jump box technique in order to reach the database server.  Using t
 
 We'll carry out each following task.
 
-Use Pulumi to create the necessary resources on AWS.
-On the DB-server, create an MYSQL server.
-On the app server, create a Node.js application service.
-Make sure the MySQL service is a prerequisite for the Node.js application service.
-To wait for MySQL to be ready, implement a health check in the Node.js application service.
+- Use Pulumi to create the necessary resources on AWS.
+- On the DB-server, create an MYSQL server.
+- On the app server, create a Node.js application service.
+- Make sure the MySQL service is a prerequisite for the Node.js application service.
+- To wait for MySQL to be ready, implement a health check in the Node.js application service.
 
 
 ## AWS infrastructure
@@ -348,7 +348,13 @@ pulumi up --yes
 ```
 We must use a jump box technique in order to reach the database server.  Using the same key pair, we first SSH into the Nodejs-server using its public IP and then go on to the database server or db-server using its private IP.  The database security group setting, which only allows SSH and database connection ports from the public network (where our Node.js server is located), is an example of how the infrastructure code reflects this architecture.
 
+![Diagram](./images/image_3.png)
+
+
 A network protocol called SSH (Secure Shell or Secure Socket Shell) provides users—especially system administrators—with a safe means of connecting to a machine across an unprotected network.   It also describes the group of programs that carry out the SSH protocol.  Secure Shell offers secured data communications between two computers connected via the internet, as well as robust password and public key authentication.  Network administrators frequently use SSH to remotely administer systems and apps, allowing them to move files between computers, run commands, and log in to another computer via a network.
+
+
+![Diagram](./images/image_4.png)
 
 # Rename Both Instances
 
@@ -357,7 +363,47 @@ sudo hostnamectl set-hostname nodejs-server
 sudo hostnamectl set-hostname db-server
 
 ```
+# Create a script to check if MySql is up and running
+
+This Bash script verifies TCP connectivity to a MySQL server with configurable retry logic, making it ideal for deployment health checks or service dependency verification.
+
+- Port Connectivity Testing: Uses netcat (nc -z) to check if MySQL's port (default: 3306) is reachable.
+- Retry Mechanism: Retries up to MAX_RETRIES (default: 30) with a delay of RETRY_INTERVAL (default: 10 seconds) between attempts.
+- Clear Logging: Outputs connection attempts and success/failure status.
+- Lightweight: No external dependencies beyond netcat.
+- Configurable: Customize via environment variables (DB_PRIVATE_IP, DB_PORT, etc.).
+
+## Typical Use Cases:
+
+- Validate MySQL availability before application deployment.
+- Health checks for containers or auto-scaling groups.
+- Integration in CI/CD pipelines to ensure database readiness.
+
+```bash
+#!/bin/bash
+DB_HOST="$DB_PRIVATE_IP"
+DB_PORT=3306
+MAX_RETRIES=30
+RETRY_INTERVAL=10
+
+check_mysql() {
+    nc -z "$DB_HOST" "$DB_PORT"
+    return $?
+}
+
+retry_count=0
+while [ $retry_count -lt $MAX_RETRIES ]; do
+    if check_mysql; then
+        echo "Successfully connected to MySQL at $DB_HOST:$DB_PORT"
+        exit 0
+    fi
+    echo "Attempt $((retry_count + 1))/$MAX_RETRIES: Cannot connect to MySQL at $DB_HOST:$DB_PORT. Retrying in $RETRY_INTERVAL seconds..."
+    sleep $RETRY_INTERVAL
+    retry_count=$((retry_count + 1))
+done
+
+echo "Failed to connect to MySQL after $MAX_RETRIES attempts"
+exit 1
 
 
-![Diagram](./images/image_3.png)
-![Diagram](./images/image_4.png)
+```
