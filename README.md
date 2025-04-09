@@ -47,7 +47,6 @@ Default output format [None]: json                              # Recommended
 
 Let's create a root folder that i called running-nodejs-mysql inside i created two different one for script and service-infra. 
 
-make sure my possword is correct.
 
 ```bash
 mkdir running-nodejs-mysql
@@ -65,17 +64,30 @@ pulumi new aws-python
 pulumi new aws-python --force
 
 ```
-Project: mysqlapp
-Stack name: dev
-Description: A simple nodejs db cluster
-Region: us-east-1
+Project:  `mysqlapp`
+Stack name: `dev`
+Description: `A simple nodejs db cluster`
+Region: `us-east-1`
 
 Go with the default values and enter  to create the project.
 
-## Update the __main__.py file:
+## Update the  `__main__.py` file:
 
 Define the AWS infrastructure needed for the database and application server by opening the __main__.py file.  The foundational architecture needed to set up a database and Virtual Private Cloud (VPC) application, including subnets, security groups, NAT gateways, Internet gateways, route tables, and EC2 instances, is provided by this Pulumi code.
 
+Before you run `pulumi new aws-python` make sure to create a new SSH key pair for use with an AWS RDS DB Cluster, you can use the AWS CLI command aws ec2 create-key-pair. Here's the command to create a new key pair and save it to a file named db-cluster.pem:
+
+
+```bash
+aws ec2 create-key-pair --key-name db-cluster --query 'KeyMaterial' --output text > db-cluster.pem
+
+```
+After creating the key pair, set restrictive permissions on the .pem file to keep it secure:
+
+```bash
+chmod 400 db-cluster.pem
+
+```
 
 ```bash
 import pulumi
@@ -328,5 +340,24 @@ pulumi.Output.all(*all_ips).apply(create_config_file)
 
 
 ```
-![Diagram](./images/image_2.png)
+
+
+```bash
+pulumi up --yes 
+
+```
+We must use a jump box technique in order to reach the database server.  Using the same key pair, we first SSH into the Nodejs-server using its public IP and then go on to the database server or db-server using its private IP.  The database security group setting, which only allows SSH and database connection ports from the public network (where our Node.js server is located), is an example of how the infrastructure code reflects this architecture.
+
+A network protocol called SSH (Secure Shell or Secure Socket Shell) provides users—especially system administrators—with a safe means of connecting to a machine across an unprotected network.   It also describes the group of programs that carry out the SSH protocol.  Secure Shell offers secured data communications between two computers connected via the internet, as well as robust password and public key authentication.  Network administrators frequently use SSH to remotely administer systems and apps, allowing them to move files between computers, run commands, and log in to another computer via a network.
+
+# Rename Both Instances
+
+```bash
+sudo hostnamectl set-hostname nodejs-server
+sudo hostnamectl set-hostname db-server
+
+```
+
+
 ![Diagram](./images/image_3.png)
+![Diagram](./images/image_4.png)
