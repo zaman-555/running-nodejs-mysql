@@ -412,7 +412,7 @@ exit 1
 
 
 ```
->  **Note** 
+>  **Note:** 
 > If you create the script in the root directory, you need to change or modify the path of the script in the `__main__.py` file. In my case i did `'/Users/mohammaduzzaman/Documents/running-nodejs-mysql/script/check-mysql.sh'`
 
 ![Diagram](./images/image_5.png)
@@ -496,5 +496,21 @@ RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
+
+```
+
+# Reload and restart
+
+As we have created a new service, we need to reload and restart the systemd services. First reload the daemon and then stop and start the services.
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start mysql-check
+
+```
+We can check the logs
+
+```bash
+sudo journactl -u mysql-check -f
 
 ```
