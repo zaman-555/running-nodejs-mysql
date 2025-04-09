@@ -92,7 +92,7 @@ Define the AWS infrastructure needed for the database and application server by 
 
 
 
-```bash
+```python
 import pulumi
 import pulumi_aws as aws
 import os
@@ -514,3 +514,151 @@ We can check the logs
 sudo journactl -u mysql-check -f
 
 ```
+# Configure a simple Node.js application
+
+We need to create a directory for the application and set up a user for the application
+
+```bash
+sudo mkdir -p /opt/app
+sudo useradd -r -s /bin/false nodejs
+sudo chown nodejs:nodejs /opt/app
+
+```
+
+Now we can create Node.js application
+ 
+ ```bash
+sudo cd /opt/app
+sudo vi server.js
+
+```
+
+Add this basic code replace  `<PRIVATE IP OF DB SERVER>` with DB server's private IP and `secure_password` with the password we created in the previous step,
+
+ ```javascript
+const express = require('express');
+const mysql = require('mysql2');
+const app = express();
+
+const pool = mysql.createPool({
+    host: '<PRIVATE IP OF DB SERVER>',  // Replace with your DB private IP
+    user: 'app_user',
+    password: 'your_secure_password',
+    database: 'app_db',
+    waitForConnections: true,
+    connectionLimit: 10
+});
+
+app.get('/', (req, res) => {
+    pool.query('SELECT 1', (err, results) => {
+        if (err) {
+            res.status(500).send('Database connection failed');
+            return;
+        }
+        res.send('Application is running!');
+    });
+});
+
+app.listen(3000, () => {
+    console.log('Server running on port 3000');
+});
+
+
+```
+
+# Create Systemd service for Node.js
+
+we will run our nodejs application as a systemd service. So, we need to create a systemd service for the Node.js application.
+
+ ```bash
+sudo vi /etc/systemd/system/nodejs-app.service
+
+```
+Add this following content to the file:
+
+![Diagram](./images/image_9.png)
+
+ ```bash
+[Unit]
+Description=Node.js Application
+After=mysql-check.service
+Requires=mysql-check.service
+
+[Service]
+Type=simple
+User=nodejs
+WorkingDirectory=/opt/app
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+
+```
+
+ ```bash
+[Unit]
+Description=Node.js Application
+After=mysql-check.service
+Requires=mysql-check.service
+
+```
+Purpose: Metadata and dependency management.
+ Key Directives:
+   - After=mysql-check.service: Ensures MySQL connectivity is verified (mysql-check.service) before starting the app.
+   - Requires=mysql-check.service: Enforces strict dependency—if MySQL check fails, the Node.js app won’t start.
+
+ ```bash
+
+[Service]
+Type=simple
+User=nodejs
+WorkingDirectory=/opt/app
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+```
+
+Purpose: Configures how the service runs.
+  Key Directives:
+
+   - Type=simple: Treats the process as a foreground service.
+   - User=nodejs: Runs the app under the nodejs user (improves security).
+   - WorkingDirectory=/opt/app: Sets the app’s root directory (where server.js resides).
+   - ExecStart=/usr/bin/node server.js: Command to launch the app.
+   - Restart=always: Automatically restarts on crash or failure.
+   - RestartSec=10: Waits 10 seconds before restarting.
+   - StandardOutput/Error=journal: Logs output to systemd journal (journalctl -u nodejs-app).
+
+
+ ```bash
+
+[Install]
+WantedBy=multi-user.target
+
+```
+Purpose: Defines when the service starts.
+  - WantedBy=multi-user.target: Starts the app when the system reaches multi-user mode (standard for server applications).
+
+Now let's start the Node.js application
+
+ ```bash
+sudo systemctl start nodejs-app
+sudo systemctl enable nodejs-app
+sudo systemctl status nodejs-app
+
+```
+we can see that the Node.js application is running on port 3000. We can access if using the public **IP** of the Node.js server.
+ 
+```bash
+curl http://<PUBLIC IP>:3000
+
+```
+![Diagram](./images/image_10.png)
