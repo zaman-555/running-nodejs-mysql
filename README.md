@@ -662,3 +662,5 @@ curl http://<PUBLIC IP>:3000
 
 ```
 ![Diagram](./images/image_10.png)
+
+![Diagram](./images/image_2.png)
